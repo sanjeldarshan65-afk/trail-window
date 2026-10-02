@@ -84,7 +84,7 @@ flowchart LR
   - CORS allows only the GitHub Pages origin and localhost.
   - Bodies over 4 KB are rejected while streaming.
   - Unknown fields, wrong types and out-of-range values get a `400`.
-  - Rate limit: 10 requests per minute per IP (in memory, best-effort per isolate).
+  - Rate limit: 10 requests per minute per IP. It lives in each Worker instance's memory, and Cloudflare runs many instances that don't share it, so it is best-effort. The hard cost ceiling is a monthly spend limit in the Anthropic Console. Cloudflare's Rate Limiting binding would make the per-IP limit global.
   - Responses are generic JSON errors that never include upstream details.
   - The system prompt forbids invented hazards and safety guarantees and treats every input value as data.
 - **Briefings are cached per plan in memory**: location, day, activity, duration and chosen window. Switching tabs doesn't call the Worker again.
