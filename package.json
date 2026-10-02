@@ -3,7 +3,7 @@
   "version": "3.0.0",
   "private": true,
   "scripts": {
-    "test": "node planner.test.js && node route.test.js && node briefing.test.js && node share.test.js",
+    "test": "node planner.test.js && node route.test.js && node briefing.test.js && node share.test.js && node conditions.test.js",
     "check:responsive": "node scripts/responsive-check.mjs"
   },
   "dependencies": {

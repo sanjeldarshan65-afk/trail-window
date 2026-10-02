@@ -109,6 +109,21 @@ function forecastFor(url) {
     },
   };
 }
+// Clean air except a smoky midday on day 3, which crosses AQI 100.
+function airFor() {
+  const time = [];
+  const us_aqi = [];
+  profiles.forEach((_, d) => {
+    const date = addDays(today, d);
+    for (let h = 0; h < 24; h++) {
+      time.push(`${date}T${String(h).padStart(2, "0")}:00`);
+      us_aqi.push(
+        d === 2 && h >= 8 && h <= 16 ? 128 + h : 28 + d * 6 + (h % 5),
+      );
+    }
+  });
+  return { timezone, hourly: { time, us_aqi } };
+}
 const PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=",
   "base64",
@@ -135,6 +150,8 @@ export async function stubNetwork(context, worker, onUnexpected = () => {}) {
     }
     if (url.hostname === "api.open-meteo.com")
       return route.fulfill({ json: forecastFor(url) });
+    if (url.hostname === "air-quality-api.open-meteo.com")
+      return route.fulfill({ json: airFor() });
     if (url.hostname === "geocoding-api.open-meteo.com")
       return route.fulfill({
         json: {

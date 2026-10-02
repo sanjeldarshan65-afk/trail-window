@@ -1,5 +1,7 @@
 const $ = (selector) => document.querySelector(selector);
 let forecast, place, chart, controller, bestWindow, fetchedAt, briefingKey;
+// undefined while loading, null when unavailable, else { time, aqi }.
+let airQuality, airController;
 let route = null,
   routeLayer = null,
   mapMarker = null;
@@ -452,6 +454,16 @@ function renderChart(hours) {
     },
   });
 }
+function airText() {
+  if (airQuality === undefined) return "Loading…";
+  const peak = TrailConditions.maxAqi(
+    airQuality,
+    TrailConditions.daytimeHours(forecast.daily.time[selectedDay]),
+  );
+  return peak === null
+    ? "Unavailable"
+    : `${peak}<small>${TrailConditions.aqiShort(peak)}</small>`;
+}
 function renderDay() {
   const d = forecast.daily;
   [...$("#days").children].forEach((button, i) => {
@@ -479,6 +491,13 @@ function renderDay() {
       `${clockTime(bestWindow.start)} – ${clockTime(bestWindow.end)}`;
     $("#window-reason").textContent =
       `A ${duration}-hour ${activity === "hiking" ? "hike" : activity === "biking" ? "ride" : "run"} with ${maxRain === 0 ? "no rain expected" : `up to a ${maxRain}% rain chance`} and wind up to ${Math.round(maxWind)} mph (gusts ${Math.round(maxGust)}). Times are ${forecast.timezone.replaceAll("_", " ")} time.`;
+    const windowAqi = TrailConditions.maxAqi(
+      airQuality,
+      bestWindow.hours.map((h) => h.time),
+    );
+    if (windowAqi > 100)
+      $("#window-reason").textContent +=
+        ` Air quality reaches AQI ${windowAqi} (${TrailConditions.aqiCategory(windowAqi).toLowerCase()}).`;
   } else {
     $("#window-rating").textContent = "Try another day or a shorter outing";
     $("#window-title").textContent = "No suitable window";
@@ -502,6 +521,7 @@ function renderDay() {
       `${Math.round(d.wind_gusts_10m_max[selectedDay])} mph`,
     ],
     ["sun", "UV index", uvText(d.uv_index_max[selectedDay])],
+    ["leaf", "Air quality", airText()],
   ]
     .map(
       ([icon, label, value]) =>
@@ -512,6 +532,14 @@ function renderDay() {
   $("#glance-heading").textContent =
     `${new Date(d.time[selectedDay] + "T12:00:00").toLocaleDateString("en-US", { weekday: "long" })} at a glance`;
   $("#sunset").textContent = clockTime(d.sunset[selectedDay]);
+  const avalanche = TrailConditions.avalancheLink(
+    place.latitude,
+    place.longitude,
+    forecast.elevation,
+    d.time[selectedDay],
+  );
+  $("#avalanche-note").hidden = !avalanche;
+  if (avalanche) $("#avalanche-note a").href = avalanche;
   renderChart(getHours(selectedDay));
   renderPacking();
   renderBriefing(renderEvidence());
@@ -646,6 +674,8 @@ async function loadForecast(nextPlace, restoreDate) {
     forecast = data;
     place = nextPlace;
     fetchedAt = new Date();
+    airQuality = undefined;
+    loadAirQuality(nextPlace);
     if (!place.routePoint) clearRoute();
     selectedDay = Math.max(0, forecast.daily.time.indexOf(restoreDate));
     renderForecast();
@@ -656,6 +686,38 @@ async function loadForecast(nextPlace, restoreDate) {
     if (error.name !== "AbortError")
       showError(error, () => loadForecast(nextPlace, restoreDate));
   }
+}
+// Air quality is supplementary: it never blocks the forecast, and a failure
+// just shows "Unavailable".
+async function loadAirQuality(forPlace) {
+  airController?.abort();
+  airController = new AbortController();
+  try {
+    const url = new URL(
+      "https://air-quality-api.open-meteo.com/v1/air-quality",
+    );
+    url.search = new URLSearchParams({
+      latitude: forPlace.latitude,
+      longitude: forPlace.longitude,
+      hourly: "us_aqi",
+      timezone: "auto",
+      forecast_days: "5",
+    });
+    const response = await fetch(url, { signal: airController.signal });
+    if (!response.ok) throw new Error("Air quality unavailable");
+    const data = await response.json();
+    if (
+      !Array.isArray(data.hourly?.time) ||
+      data.hourly.us_aqi?.length !== data.hourly.time.length
+    )
+      throw new Error("Air quality incomplete");
+    if (place !== forPlace) return;
+    airQuality = { time: data.hourly.time, aqi: data.hourly.us_aqi };
+  } catch (error) {
+    if (error.name === "AbortError" || place !== forPlace) return;
+    airQuality = null;
+  }
+  renderDay();
 }
 async function search(query) {
   controller?.abort();

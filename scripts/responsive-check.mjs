@@ -215,6 +215,77 @@ try {
     await context.close();
   }
 
+  console.log("\nAir quality and avalanche link");
+  {
+    const { context, page, errors } = await openPage(browser, 1280);
+    const airMetric = page.locator(".metric", { hasText: "Air quality" });
+    await page.waitForFunction(() =>
+      [...document.querySelectorAll(".metric")].some(
+        (m) =>
+          /Air quality/.test(m.textContent) && !/Loading/.test(m.textContent),
+      ),
+    );
+    await page.locator("#days .day").nth(1).click();
+    const clean = await airMetric.textContent();
+    if (/\d+Good/.test(clean)) pass(`clean day: "${clean}"`);
+    else fail(`clean day air metric: "${clean}"`);
+    if (
+      !/Air quality reaches/.test(
+        await page.locator("#window-reason").textContent(),
+      )
+    )
+      pass("no air quality alert on a clean day");
+    else fail("air quality alert on a clean day");
+    await page.locator("#days .day").nth(2).click();
+    const smoky = await airMetric.textContent();
+    const reason = await page.locator("#window-reason").textContent();
+    if (
+      /1\d\dSensitive groups/.test(smoky) &&
+      /Air quality reaches AQI 1\d\d \(unhealthy for sensitive groups\)/.test(
+        reason,
+      )
+    )
+      pass(`smoky day: "${smoky}" and the window card warns`);
+    else fail(`smoky day metric "${smoky}", reason "${reason}"`);
+    await page.getByRole("button", { name: "Brighton" }).click();
+    await page.locator("#results").waitFor({ state: "visible" });
+    const month = Number(today.slice(5, 7));
+    const inSeason = month >= 11 || month <= 5;
+    const avalanche = await page.locator("#avalanche-note").isVisible();
+    if (avalanche === inSeason)
+      pass(
+        `avalanche link ${inSeason ? "shown" : "hidden"} for Brighton in month ${month}`,
+      );
+    else fail(`avalanche link visible=${avalanche} in month ${month}`);
+    if (errors.length) fail(`console errors: ${errors.join(" | ")}`);
+    await context.close();
+  }
+  {
+    const context = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+    });
+    await stubNetwork(context, null);
+    await context.route("https://air-quality-api.open-meteo.com/**", (route) =>
+      route.fulfill({ status: 503, body: "" }),
+    );
+    const page = await context.newPage();
+    const pageErrors = [];
+    page.on("pageerror", (error) => pageErrors.push(error.message));
+    await page.goto(origin + "/");
+    await page.locator("#results").waitFor({ state: "visible" });
+    await page.waitForFunction(() =>
+      [...document.querySelectorAll(".metric")].some((m) =>
+        /Unavailable/.test(m.textContent),
+      ),
+    );
+    const status = await page.locator("#status").textContent();
+    if (!status && !pageErrors.length)
+      pass("air quality failure shows Unavailable and nothing else breaks");
+    else
+      fail(`air failure: status "${status}", errors ${pageErrors.join(" | ")}`);
+    await context.close();
+  }
+
   console.log("\nOffline and retry");
   {
     const context = await browser.newContext({
