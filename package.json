@@ -3,7 +3,7 @@
   "version": "3.0.0",
   "private": true,
   "scripts": {
-    "test": "node planner.test.js && node route.test.js"
+    "test": "node planner.test.js && node route.test.js && node briefing.test.js"
   },
   "dependencies": {
     "chart.js": "4.4.8",

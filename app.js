@@ -1,5 +1,5 @@
 const $ = (selector) => document.querySelector(selector);
-let forecast, place, chart, controller, bestWindow, fetchedAt;
+let forecast, place, chart, controller, bestWindow, fetchedAt, briefingKey;
 let route = null,
   routeLayer = null,
   mapMarker = null;
@@ -131,6 +131,7 @@ function renderEvidence() {
   $("#download-plan").disabled = !bestWindow;
   $("#window-evidence").replaceChildren();
   $("#alternatives").replaceChildren();
+  const distinct = [];
   if (bestWindow) {
     const feels = bestWindow.hours.map((h) => h.feels);
     const metrics = [
@@ -157,7 +158,6 @@ function renderEvidence() {
       item.append(strong, span);
       $("#window-evidence").append(item);
     });
-    const distinct = [];
     for (const candidate of windows) {
       if (
         distinct.every(
@@ -205,6 +205,61 @@ function renderEvidence() {
   }).format(fetchedAt);
   $("#forecast-context").textContent =
     `Fetched ${fetched} local time. Elevation: ${Math.round(forecast.elevation)} m. Model grid: ${forecast.latitude.toFixed(3)}, ${forecast.longitude.toFixed(3)}. Weather models may miss ridge exposure or rapidly changing conditions. Penalties are relative comfort preferences, not probabilities of safety.`;
+  return distinct;
+}
+function showBriefing({ text, source }) {
+  $("#briefing").setAttribute("aria-busy", "false");
+  $(".briefing-skeleton").hidden = true;
+  $("#briefing-loading").hidden = true;
+  $("#briefing-text").textContent = text;
+  $("#briefing-text").hidden = false;
+  $("#briefing-source").hidden = source !== "template";
+}
+function renderBriefing(compared) {
+  if (!bestWindow) {
+    briefingKey = null;
+    showBriefing({
+      text: "No complete daylight window fits your limits on this day, so there is no window to brief. Try another day, a shorter outing, or different limits.",
+      source: "template",
+    });
+    return;
+  }
+  const d = forecast.daily;
+  const key = TrailBriefing.cacheKey([
+    place.name,
+    place.latitude,
+    place.longitude,
+    place.elevation ?? null,
+    d.time[selectedDay],
+    activity,
+    duration,
+    bestWindow.start,
+    bestWindow.end,
+  ]);
+  briefingKey = key;
+  const ready = TrailBriefing.cached(key);
+  if (ready) return showBriefing(ready);
+  $("#briefing").setAttribute("aria-busy", "true");
+  $(".briefing-skeleton").hidden = false;
+  $("#briefing-loading").hidden = false;
+  $("#briefing-text").hidden = true;
+  $("#briefing-source").hidden = true;
+  TrailBriefing.getBriefing(
+    key,
+    TrailBriefing.buildPayload({
+      location: place.name,
+      activity,
+      duration,
+      window: bestWindow,
+      compared,
+      sunset: d.sunset[selectedDay],
+      elevation: forecast.elevation,
+      uvIndexMax: d.uv_index_max[selectedDay],
+      clockTime,
+    }),
+  ).then((result) => {
+    if (briefingKey === key) showBriefing(result);
+  });
 }
 function packingProgress() {
   const inputs = [...$("#packing").querySelectorAll("input")];
@@ -427,7 +482,7 @@ function renderDay() {
   $("#sunset").textContent = clockTime(d.sunset[selectedDay]);
   renderChart(getHours(selectedDay));
   renderPacking();
-  renderEvidence();
+  renderBriefing(renderEvidence());
   icons();
 }
 function renderForecast() {

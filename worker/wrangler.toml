@@ -1,0 +1,12 @@
+name = "trail-window-briefing"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Non-secret settings. The API key is a secret, never a var:
+#   wrangler secret put ANTHROPIC_API_KEY
+[vars]
+MODEL = "claude-haiku-4-5"
+
+[observability]
+enabled = true

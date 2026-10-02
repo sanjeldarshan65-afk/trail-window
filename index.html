@@ -274,6 +274,31 @@
               ><span>Save plan</span>
             </button>
           </section>
+          <section class="briefing" aria-labelledby="briefing-heading">
+            <div class="briefing-heading">
+              <h2 id="briefing-heading">
+                <i data-lucide="sparkles" aria-hidden="true"></i>Trail briefing
+              </h2>
+              <span class="briefing-label"
+                >AI briefing · based on forecast data<span
+                  id="briefing-source"
+                  class="briefing-badge"
+                  title="Written locally from templates because the AI briefing was unavailable"
+                  hidden
+                  >template</span
+                ></span
+              >
+            </div>
+            <div id="briefing" aria-live="polite" aria-busy="false">
+              <div class="briefing-skeleton" aria-hidden="true" hidden>
+                <span></span><span></span><span></span>
+              </div>
+              <span id="briefing-loading" class="visually-hidden" hidden
+                >Writing your trail briefing…</span
+              >
+              <p id="briefing-text"></p>
+            </div>
+          </section>
           <section class="decision-panel">
             <div class="panel-heading">
               <h2>Why this window?</h2>
@@ -372,6 +397,7 @@
     <script src="vendor/chart.umd.js"></script>
     <script src="vendor/leaflet.js"></script>
     <script src="planner.js"></script>
+    <script src="briefing.js"></script>
     <script src="route.js"></script>
     <script src="app.js"></script>
   </body>
