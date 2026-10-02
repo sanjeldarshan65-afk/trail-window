@@ -1,0 +1,14 @@
+const assert = require('node:assert/strict');
+const { findWindow } = require('./planner');
+const day = '2026-10-02';
+const hours = Array.from({ length: 24 }, (_, hour) => ({ time: `${day}T${String(hour).padStart(2, '0')}:00`, feels: 65, rain: 0, wind: 5, code: 0 }));
+const rise = `${day}T07:25`, set = `${day}T19:07`;
+const best = findWindow(hours, 3, 'hiking', rise, set, `${day}T09:15`);
+assert.equal(best.start, `${day}T10:00`);
+assert.equal(best.end, `${day}T13:00`);
+assert.equal(findWindow(hours, 3, 'hiking', rise, set, `${day}T17:00`), null);
+assert.equal(findWindow(hours.map(h => ({ ...h, code: 95 })), 1, 'hiking', rise, set, `${day}T00:00`), null);
+const missing = hours.map(h => ({ ...h, rain: null }));
+assert.equal(findWindow(missing, 2, 'hiking', rise, set, `${day}T00:00`), null);
+assert.equal(findWindow(hours, 5, 'hiking', rise, set, `${day}T00:00`).start, `${day}T08:00`);
+console.log('Window logic: daylight, elapsed time, duration, thunderstorms and missing data passed.');

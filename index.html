@@ -1,41 +1,14 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f5f7f4">
-  <title>Trail Window | Plan an outdoor day</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#f4f6f7"><title>Trail Window · Your next day outside</title><link rel="stylesheet" href="styles.css"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"></head>
 <body>
-  <header class="topbar">
-    <div class="brand"><span class="brand-mark" aria-hidden="true">▲</span><span>Trail Window</span></div>
-    <span class="top-note">A clearer forecast for time outside</span>
-  </header>
-  <main>
-    <section class="intro">
-      <h1>Find your window outside.</h1>
-      <p>Check the forecast, compare the next few days, and pack for what the weather may bring.</p>
-    </section>
-    <section class="planner" aria-label="Plan an outing">
-      <form id="search-form">
-        <label for="location">Location</label>
-        <div class="search-row"><input id="location" name="location" placeholder="City or town" value="Salt Lake City, Utah" required autocomplete="address-level2"><button type="submit">Check weather <span aria-hidden="true">→</span></button></div>
-        <div class="activity-row"><span>Activity</span><div class="segments" role="group" aria-label="Activity"><button type="button" class="selected" data-activity="hiking" aria-pressed="true">Hiking</button><button type="button" data-activity="biking" aria-pressed="false">Biking</button><button type="button" data-activity="running" aria-pressed="false">Running</button></div></div>
-      </form>
-      <p id="status" role="status" aria-live="polite">Loading forecast…</p>
-    </section>
-    <section id="results" class="results" hidden>
-      <div class="section-heading"><h2 id="place-heading"></h2><span id="updated"></span></div>
-      <div id="days" class="days" aria-label="Daily forecast"></div>
-      <div class="details">
-        <div class="window-panel"><h3 id="window-title"></h3><p id="window-reason"></p><div id="metrics" class="metrics"></div></div>
-        <div class="pack-panel"><h3>Pack for the conditions</h3><ul id="packing"></ul><p class="caution">Forecasts are estimates for the selected location, not trail conditions. Check local alerts and conditions before leaving.</p></div>
-      </div>
-      <p class="method"><strong>How the window is picked:</strong> Hours from 8 AM to 6 PM are ranked by rain chance, wind, and apparent temperature. This is a planning aid, not a safety assessment.</p>
-    </section>
-  </main>
-  <footer>Weather and location data: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>. No account or tracking.</footer>
-  <script src="app.js"></script>
-</body>
-</html>
+<header class="topbar"><a class="brand" href="./"><i data-lucide="mountain" aria-hidden="true"></i>Trail Window<span class="brand-dot"></span></a><span class="header-note">Less guessing. More outside.</span><a class="source-link" aria-label="View GitHub project" href="https://github.com/sanjeldarshan65-afk/trail-window" target="_blank" rel="noopener"><i data-lucide="github" aria-hidden="true"></i><span>View project</span></a></header>
+<div class="workspace"><aside class="sidebar"><h1>Plan your next outing</h1>
+<form id="search-form"><label for="location">Where are you headed?</label><div class="search-input"><i data-lucide="search" aria-hidden="true"></i><input id="location" value="Salt Lake City" placeholder="City or town" required autocomplete="off"><button class="icon-button" type="submit" aria-label="Search location" title="Search location"><i data-lucide="arrow-right" aria-hidden="true"></i></button></div><div id="locations" class="location-options" hidden></div><div class="quick-locations"><button type="button" data-place="Salt Lake City">Salt Lake City</button><button type="button" data-place="Boulder">Boulder</button><button type="button" data-place="Asheville">Asheville</button></div>
+<fieldset><legend>What’s the plan?</legend><div class="activities"><button type="button" class="selected" data-activity="hiking" aria-pressed="true"><i data-lucide="footprints" aria-hidden="true"></i>Hike</button><button type="button" data-activity="biking" aria-pressed="false"><i data-lucide="bike" aria-hidden="true"></i>Ride</button><button type="button" data-activity="running" aria-pressed="false"><i data-lucide="person-standing" aria-hidden="true"></i>Run</button></div></fieldset><label for="duration">Time outside <output id="duration-value">2 hours</output></label><input id="duration" type="range" min="1" max="5" value="2" step="1"></form>
+<div class="sidebar-note"><i data-lucide="map-pin" aria-hidden="true"></i><p>City-level forecasts. For a mountain trip, check conditions at your actual trail elevation.</p></div><div class="saved-plan"><h2><i data-lucide="bookmark" aria-hidden="true"></i>Your saved plan</h2><p id="saved-summary">A good day outside starts with a plan.</p><button id="restore-plan" type="button" hidden>Open saved plan <i data-lucide="arrow-up-right" aria-hidden="true"></i></button></div><div class="sidebar-bottom"><span class="live-dot"></span>Powered by Open-Meteo<a href="https://open-meteo.com/" target="_blank" rel="noopener" aria-label="Open-Meteo weather data"><i data-lucide="external-link" aria-hidden="true"></i></a></div></aside>
+<main><section class="destination"><img src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1800&q=85" alt="Sunlit mountain ridges and alpine terrain" fetchpriority="high"><div class="destination-shade"></div><div class="destination-content"><span class="destination-meta"><i data-lucide="navigation" aria-hidden="true"></i><span id="coordinates">Your next adventure</span></span><h2 id="place-heading">Salt Lake City</h2><p id="destination-region">Utah, United States</p></div><a class="photo-credit" href="https://unsplash.com/" target="_blank" rel="noopener">Mountain inspiration · Unsplash</a></section>
+<div id="status" role="status" aria-live="polite"></div><div id="results" hidden><div class="forecast-heading"><h2>Your five-day outlook</h2><span id="updated"></span></div><div id="days" class="days" aria-label="Select forecast day"></div>
+<section class="recommendation"><div class="recommendation-icon"><i data-lucide="sun" aria-hidden="true"></i></div><div class="recommendation-copy"><span id="window-rating" class="rating"></span><h2 id="window-title"></h2><p id="window-reason"></p></div><button id="save-plan" type="button"><i data-lucide="bookmark" aria-hidden="true"></i><span>Save plan</span></button></section>
+<div class="data-grid"><section class="hourly-panel"><div class="panel-heading"><h2>Conditions through the day</h2><div class="chart-legend"><span><b class="temp-key"></b>Feels like</span><span><b class="rain-key"></b>Rain chance</span></div></div><div class="chart-wrap"><canvas id="hourly-chart" role="img" aria-label="Hourly apparent temperature and precipitation chance"></canvas></div><details class="hourly-details"><summary>View hourly numbers</summary><div class="table-wrap"><table><thead><tr><th>Time</th><th>Feels like</th><th>Rain</th><th>Wind</th></tr></thead><tbody id="hourly-table"></tbody></table></div></details></section><section class="day-details"><h2>Day at a glance</h2><div id="metrics" class="metrics"></div><div class="sun-times"><span><i data-lucide="sunrise" aria-hidden="true"></i>Sunrise<strong id="sunrise"></strong></span><span><i data-lucide="sunset" aria-hidden="true"></i>Sunset<strong id="sunset"></strong></span></div></section></div>
+<section class="packing-panel"><div class="panel-heading"><h2>Pack for the forecast</h2><span id="packing-progress">0 packed</span></div><div id="packing" class="packing-list"></div></section><details class="method"><summary><i data-lucide="info" aria-hidden="true"></i>How we find your window</summary><p>We compare consecutive daylight hours between 6 AM and 8 PM, using your outing duration. Lower rain chance, lighter wind, and comfortable apparent temperatures score better. Thunderstorm hours are excluded. Times that have already passed are excluded from today. This is a forecast-based planning aid; check trail conditions and local alerts before heading out.</p></details></div><footer><span>Make room for a little adventure.</span><span>Forecasts are estimates, not trail reports.</span></footer></main></div>
+<script src="vendor/lucide.min.js"></script><script src="vendor/chart.umd.js"></script><script src="planner.js"></script><script src="app.js"></script></body></html>

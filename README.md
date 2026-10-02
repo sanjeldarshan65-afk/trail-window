@@ -1,13 +1,29 @@
 # Trail Window
 
-Trail Window is a small outdoor outing planner. Search for a city, choose hiking, biking, or running, and compare five days of weather. It ranks daylight hours by precipitation chance, wind, apparent temperature, and activity-specific comfort, then suggests a packing list.
+[Live app](https://sanjeldarshan65-afk.github.io/trail-window/)
 
-The site uses the [Open-Meteo Geocoding API](https://open-meteo.com/en/docs/geocoding-api) and [Weather Forecast API](https://open-meteo.com/en/docs). It is a static site with no account, backend, or API key. Forecasts are for the searched location and are not a substitute for local trail reports or safety advisories.
+An outdoor planning workspace that helps hikers, riders, and runners compare five days of weather and find a forecast window for their outing.
 
-## Run locally
+## Features
 
-Open `index.html` in a browser. An internet connection is needed for forecast data.
+- Location search with matching city choices.
+- Activity and duration controls that update the recommended window.
+- Consecutive daylight windows that exclude past hours and thunderstorms.
+- Interactive hourly temperature and rain charts, with a numeric table alternative.
+- Sunrise, sunset, wind gusts, UV, and condition-based packing suggestions.
+- Saved plan and checklist stored locally in the browser.
+- Keyboard navigation, visible focus, mobile layouts, and reduced motion support.
 
-## Development
+## Run
 
-I used AI as a coding collaborator to explore interface ideas and edge cases, then checked the forecast flow and interactions in a browser. The recommendation itself is a transparent scoring rule in `app.js`, not an AI prediction.
+Open `index.html`, or run `python3 -m http.server 8000` and visit `http://localhost:8000`. Forecasts require an internet connection. Run `node planner.test.js` to check the recommendation rules.
+
+## Architecture
+
+Static HTML, CSS, and JavaScript with no backend or API keys. Weather and city search use [Open-Meteo](https://open-meteo.com/en/docs). Chart.js handles charts; Lucide provides icons. Vendored dependencies keep these libraries available without a runtime CDN. Google Fonts and Unsplash supply typography and the mountain inspiration photograph. The photograph does not represent the selected location.
+
+`planner.js` contains the inspectable scoring rule. `app.js` handles API calls, local storage, and the interface. Forecasts are city-level estimates, not local trail reports or safety assessments.
+
+## AI-assisted development
+
+AI helped with design exploration, implementation, and edge-case analysis. UI/UX Pro Max guided the dashboard overhaul. Browser verification covered 375, 768, 1024, and 1440px layouts, location selection, errors, activity and duration controls, saved plans, and checklist persistence. Focused logic tests cover daylight limits, elapsed time, duration, thunderstorms, and missing data. Recommendations use explicit rules, not generative AI predictions.
