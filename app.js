@@ -213,11 +213,8 @@ function packingProgress() {
 }
 function renderPacking() {
   const d = forecast.daily;
-  const items = [
-    ["Water bottle", "Hydration"],
-    ["Charged phone", "Communication"],
-    ["Offline map", "Navigation without service"],
-  ];
+  // A reason is shown only when it comes from forecast data.
+  const items = [["Water bottle"], ["Charged phone"], ["Offline map"]];
   if (d.precipitation_probability_max[selectedDay] >= 25)
     items.push([
       "Rain shell",
@@ -243,8 +240,7 @@ function renderPacking() {
       "Windproof layer",
       `${Math.round(d.wind_gusts_10m_max[selectedDay])} mph daily gusts`,
     ]);
-  if (activity === "biking")
-    items.push(["Helmet & repair kit", "For your ride"]);
+  if (activity === "biking") items.push(["Helmet & repair kit"]);
   if (activity === "hiking")
     items.push(["Trail snacks", `${duration} hours outside`]);
   $("#packing").replaceChildren(
@@ -267,7 +263,7 @@ function renderPacking() {
         }
       });
       const span = document.createElement("span");
-      span.textContent = `${item} (${reason})`;
+      span.textContent = reason ? `${item} (${reason})` : item;
       label.append(input, span);
       return label;
     }),
