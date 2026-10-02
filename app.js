@@ -2,6 +2,10 @@ const $ = (selector) => document.querySelector(selector);
 let forecast, place, chart, controller, bestWindow, fetchedAt, briefingKey;
 // undefined while loading, null when unavailable, else { time, aqi }.
 let airQuality, airController;
+// Checkpoint forecasts for the imported route and current activity:
+// { route, activity, plan, forecasts } with forecasts undefined while
+// loading and null when unavailable.
+let routeData = null;
 let route = null,
   routeLayer = null,
   mapMarker = null;
@@ -543,6 +547,7 @@ function renderDay() {
   renderChart(getHours(selectedDay));
   renderPacking();
   renderBriefing(renderEvidence());
+  renderRoute();
   syncUrl();
   icons();
 }
@@ -878,17 +883,122 @@ $("#share-plan").addEventListener("click", async () => {
 });
 function clearRoute() {
   route = null;
+  routeData = null;
+  $("#route-panel").hidden = true;
   routeLayer?.remove();
   routeLayer = null;
   $("#route-summary").hidden = true;
   $("#route-points").replaceChildren();
 }
-function importRoute(text) {
-  const parsed = TrailRoute.parseGPX(text, DOMParser, (a, b) =>
-    L.latLng(a.latitude, a.longitude).distanceTo(
-      L.latLng(b.latitude, b.longitude),
-    ),
+const metersBetween = (a, b) =>
+  L.latLng(a.latitude, a.longitude).distanceTo(
+    L.latLng(b.latitude, b.longitude),
   );
+async function loadRouteForecast(entry) {
+  try {
+    const points = entry.plan.checkpoints;
+    const url = new URL("https://api.open-meteo.com/v1/forecast");
+    url.search = new URLSearchParams({
+      latitude: points.map((p) => p.latitude.toFixed(5)).join(","),
+      longitude: points.map((p) => p.longitude.toFixed(5)).join(","),
+      timezone: "auto",
+      forecast_days: "5",
+      temperature_unit: "fahrenheit",
+      wind_speed_unit: "mph",
+      hourly:
+        "apparent_temperature,precipitation_probability,wind_speed_10m,wind_gusts_10m,weather_code",
+    });
+    if (points.every((p) => Number.isFinite(p.elevation)))
+      url.searchParams.set(
+        "elevation",
+        points.map((p) => Math.round(p.elevation)).join(","),
+      );
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Route forecast unavailable");
+    const data = await response.json();
+    const forecasts = Array.isArray(data) ? data : [data];
+    if (
+      forecasts.length !== points.length ||
+      forecasts.some((f) => !Array.isArray(f.hourly?.time))
+    )
+      throw new Error("Route forecast incomplete");
+    entry.forecasts = forecasts;
+  } catch {
+    entry.forecasts = null;
+  }
+  if (routeData === entry && forecast) renderRoute();
+}
+function renderRoute() {
+  const panel = $("#route-panel");
+  if (!route || !forecast) {
+    panel.hidden = true;
+    return;
+  }
+  if (routeData?.route !== route || routeData.activity !== activity) {
+    routeData = {
+      route,
+      activity,
+      plan: TrailSegments.checkpoints(route.points, metersBetween, activity),
+      forecasts: undefined,
+    };
+    loadRouteForecast(routeData);
+  }
+  panel.hidden = false;
+  const { plan, forecasts } = routeData;
+  const planned = duration * 60;
+  $("#route-estimate").textContent =
+    `About ${durationText(Math.round(plan.totalMinutes / 5) * 5)} moving`;
+  const suggest = Math.min(5, Math.ceil(plan.totalMinutes / 60));
+  const useRoute = $("#use-route-time");
+  useRoute.hidden = plan.totalMinutes <= planned + 15 || suggest === duration;
+  useRoute.dataset.hours = suggest;
+  useRoute.textContent =
+    plan.totalMinutes > 300
+      ? "Plan for 5 hours, the longest window"
+      : `Plan for ${suggest} ${suggest === 1 ? "hour" : "hours"} to match the route`;
+  const message = (text) => {
+    $("#route-change").textContent = text;
+    $("#route-table").hidden = true;
+  };
+  if (!bestWindow)
+    return message("No window to plan the route around on this day.");
+  if (forecasts === undefined)
+    return message("Getting the forecast along your route…");
+  if (forecasts === null)
+    return message("The forecast along your route is unavailable right now.");
+  const rows = TrailSegments.conditionsAlong(plan, forecasts, bestWindow.start);
+  $("#route-table").hidden = false;
+  $("#route-change").textContent =
+    TrailSegments.biggestChange(rows) ??
+    "Conditions stay close to the start along the route.";
+  $("#route-rows").replaceChildren(
+    ...rows.map((row) => {
+      const tr = document.createElement("tr");
+      [
+        row.label,
+        clockTime(row.arrival),
+        Number.isFinite(row.elevation) ? `${Math.round(row.elevation)} m` : "—",
+        Number.isFinite(row.feels) ? `${Math.round(row.feels)}°F` : "—",
+        Number.isFinite(row.rain) ? `${Math.round(row.rain)}%` : "—",
+        Number.isFinite(row.wind)
+          ? `${Math.round(row.wind)} (${Math.round(row.gust ?? row.wind)}) mph`
+          : "—",
+      ].forEach((value, i) => {
+        const cell = document.createElement(i === 0 ? "th" : "td");
+        if (i === 0) cell.scope = "row";
+        cell.textContent = value;
+        tr.append(cell);
+      });
+      return tr;
+    }),
+  );
+}
+$("#use-route-time").addEventListener("click", (event) => {
+  $("#duration").value = event.currentTarget.dataset.hours;
+  $("#duration").dispatchEvent(new Event("input"));
+});
+function importRoute(text) {
+  const parsed = TrailRoute.parseGPX(text, DOMParser, metersBetween);
   routeLayer?.remove();
   route = parsed;
   const segments = [];

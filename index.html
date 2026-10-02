@@ -155,8 +155,8 @@
             <i data-lucide="arrow-up-right" aria-hidden="true"></i>
           </button>
           <p class="micro-note">
-            GPX stays in this browser. Selected forecast coordinates are sent to
-            Open-Meteo.
+            The GPX file stays in this browser. Only the forecast point and up
+            to six route checkpoints are sent to Open-Meteo as coordinates.
           </p>
           <div id="route-summary" hidden></div>
           <div id="route-points" class="route-points"></div>
@@ -340,6 +340,52 @@
               <p id="briefing-text"></p>
             </div>
           </section>
+          <section
+            id="route-panel"
+            class="route-panel"
+            aria-labelledby="route-heading"
+            hidden
+          >
+            <div class="panel-heading">
+              <h2 id="route-heading">Along your route</h2>
+              <span id="route-estimate"></span>
+            </div>
+            <p id="route-change" class="route-change" aria-live="polite"></p>
+            <div
+              id="route-table"
+              class="table-wrap"
+              role="region"
+              aria-label="Conditions along the route"
+              tabindex="0"
+            >
+              <table>
+                <thead>
+                  <tr>
+                    <th>Checkpoint</th>
+                    <th>Arrive</th>
+                    <th>Elevation</th>
+                    <th>Feels like</th>
+                    <th>Rain</th>
+                    <th>Wind (gusts)</th>
+                  </tr>
+                </thead>
+                <tbody id="route-rows"></tbody>
+              </table>
+            </div>
+            <div class="route-footer">
+              <p class="micro-note">
+                Arrival times are Naismith-style estimates from the start of
+                your best window. The window itself is still scored at the
+                selected forecast point.
+              </p>
+              <button
+                id="use-route-time"
+                class="text-command"
+                type="button"
+                hidden
+              ></button>
+            </div>
+          </section>
           <section class="decision-panel">
             <div class="panel-heading">
               <h2>Why this window?</h2>
@@ -460,6 +506,7 @@
     <script src="briefing.js"></script>
     <script src="share.js"></script>
     <script src="conditions.js"></script>
+    <script src="segments.js"></script>
     <script src="route.js"></script>
     <script src="app.js"></script>
   </body>

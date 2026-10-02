@@ -63,7 +63,32 @@ const profiles = [
     code: 61,
   },
 ];
+// Multi-point requests (route checkpoints) get one forecast per point, cooler
+// and gustier with height: about 1.2°F colder and 1 mph gustier per 100 m
+// above 1,900 m.
 function forecastFor(url) {
+  const lats = url.searchParams.get("latitude").split(",");
+  if (lats.length === 1)
+    return forecastAt(
+      url,
+      lats[0],
+      url.searchParams.get("longitude"),
+      url.searchParams.get("elevation"),
+      0,
+    );
+  const lons = url.searchParams.get("longitude").split(",");
+  const elevations = (url.searchParams.get("elevation") || "").split(",");
+  return lats.map((lat, i) =>
+    forecastAt(
+      url,
+      lat,
+      lons[i],
+      elevations[i],
+      (Number(elevations[i]) || 1900) - 1900,
+    ),
+  );
+}
+function forecastAt(url, lat, lon, elevationParam, aboveBase) {
   const dates = profiles.map((_, i) => addDays(today, i));
   const hourly = {
     time: [],
@@ -79,18 +104,18 @@ function forecastFor(url) {
       const warm = h >= 6 && h <= 20 ? Math.sin((Math.PI * (h - 6)) / 14) : 0;
       hourly.time.push(`${date}T${String(h).padStart(2, "0")}:00`);
       hourly.apparent_temperature.push(
-        +(p.low + (p.high - p.low) * warm).toFixed(1),
+        +(p.low + (p.high - p.low) * warm - aboveBase * 0.012).toFixed(1),
       );
       hourly.precipitation_probability.push(p.rain(h));
       hourly.wind_speed_10m.push(p.wind);
-      hourly.wind_gusts_10m.push(p.gust);
+      hourly.wind_gusts_10m.push(Math.round(p.gust + aboveBase / 100));
       hourly.weather_code.push(p.code);
     }
   });
-  const elevation = Number(url.searchParams.get("elevation"));
+  const elevation = Number(elevationParam);
   return {
-    latitude: Number(url.searchParams.get("latitude")),
-    longitude: Number(url.searchParams.get("longitude")),
+    latitude: Number(lat),
+    longitude: Number(lon),
     elevation: Number.isFinite(elevation) && elevation ? elevation : 1288,
     timezone,
     hourly,

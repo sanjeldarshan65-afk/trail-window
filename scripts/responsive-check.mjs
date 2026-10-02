@@ -286,6 +286,69 @@ try {
     await context.close();
   }
 
+  console.log("\nForecast along a GPX route");
+  for (const width of [390, 1280]) {
+    const { context, page, errors } = await openPage(browser, width);
+    if (width === 390) await page.click(".trail-controls summary");
+    await page.click("#demo-route");
+    await page.waitForFunction(
+      () => document.querySelectorAll("#route-rows tr").length > 0,
+    );
+    const labels = await page.locator("#route-rows th").allTextContents();
+    if (
+      labels[0] === "Start" &&
+      labels.at(-1) === "Finish" &&
+      labels.includes("High point")
+    )
+      pass(`${width}px: checkpoints ${labels.join(" → ")}`);
+    else fail(`${width}px: checkpoints ${labels.join(", ")}`);
+    const change = await page.locator("#route-change").textContent();
+    if (/high point|km|finish/.test(change)) pass(`route note: "${change}"`);
+    else fail(`route note: "${change}"`);
+    await page.locator("#duration").fill("1");
+    const useRoute = page.locator("#use-route-time");
+    await useRoute.waitFor({ state: "visible" });
+    const offer = await useRoute.textContent();
+    await useRoute.click();
+    const hours = await page.locator("#duration").inputValue();
+    if (
+      /Plan for 3 hours/.test(offer) &&
+      hours === "3" &&
+      (await useRoute.isHidden())
+    )
+      pass(`"${offer}" sets the duration to ${hours} hours`);
+    else fail(`route time offer "${offer}" left duration ${hours}`);
+    await noHorizontalScroll(page, `${width}px with route panel`);
+    await page.getByRole("button", { name: "Salt Lake City" }).click();
+    await page.locator("#route-panel").waitFor({ state: "hidden" });
+    pass("route panel clears when you leave the route");
+    if (errors.length) fail(`console errors: ${errors.join(" | ")}`);
+    await context.close();
+  }
+  {
+    const context = await browser.newContext({
+      viewport: { width: 1280, height: 900 },
+    });
+    await stubNetwork(context, null);
+    // Fail only the multi-point checkpoint request.
+    await context.route("https://api.open-meteo.com/**", (route) =>
+      new URL(route.request().url()).searchParams.get("latitude").includes(",")
+        ? route.fulfill({ status: 500, body: "" })
+        : route.fallback(),
+    );
+    const page = await context.newPage();
+    await page.goto(origin + "/");
+    await page.locator("#results").waitFor({ state: "visible" });
+    await page.click("#demo-route");
+    await page.waitForFunction(() =>
+      /unavailable/.test(document.querySelector("#route-change").textContent),
+    );
+    if (await page.locator("#route-table").isHidden())
+      pass("route forecast failure shows a message, not an empty table");
+    else fail("route table visible after a failed route forecast");
+    await context.close();
+  }
+
   console.log("\nOffline and retry");
   {
     const context = await browser.newContext({

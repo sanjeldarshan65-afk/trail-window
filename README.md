@@ -12,6 +12,7 @@ It's a static site with no build step and no account. It uses Leaflet, OpenStree
 
 - **Window scoring.** Ranks every complete daylight window of 1–5 hours by rain, wind and feels-like penalties, and shows the math: a per-component penalty table, alternative windows, and honest tie notes.
 - **GPX import and elevation.** Parses a GPX file in the browser and reports distance and ascent. You can forecast at the start, high point or finish, at that point's elevation. You can also click the map or enter coordinates and elevation by hand.
+- **Forecast along the route.** Estimates moving time with a Naismith-style rule (hiking 5 km/h plus 1 hour per 600 m climbed; faster for riding and running). It then forecasts the start, the quarter marks, the high point and the finish for the hour you'd reach each one, starting from the best window. It calls out the biggest change, such as "Gusts build to 21 mph at the high point", and offers to match your planned duration to the route.
 - **Adaptive packing list.** Items appear because of the forecast: a warm layer for low feels-like, sun protection for UV, extra water for heat, a windproof layer for gusts, a shell for rain. Each forecast-driven item says why in parentheses.
 - **Trail briefing.** A 2–3 sentence summary of the chosen window that names its main tradeoff, such as a cold start, afternoon heat or gusts on exposed terrain, using only the forecast numbers. The live demo writes it from local templates. An AI version is built and tested behind a Cloudflare Worker (see [Deploy the AI briefing](#deploy-the-ai-briefing)); once deployed, the card switches to AI text and falls back to the template on any error, so it's never blank.
 - **Air quality and avalanche pointers.** Day at a glance shows the daytime peak US AQI with its EPA category, from Open-Meteo's air-quality model. If the chosen window passes AQI 100, the window card says so. Air quality is shown, not scored. For Utah points above 2,000 m from November through May, a link points to the Utah Avalanche Center forecast.
@@ -73,6 +74,7 @@ flowchart LR
 | `index.html`, `styles.css`, `app.js` | Interface, state, Open-Meteo calls, map, checklist and saved plan                        |
 | `planner.js`                         | `rankWindows`, `findWindow`, `tieNote`; runs in browser and Node                         |
 | `route.js`                           | GPX validation and parsing                                                               |
+| `segments.js`                        | Naismith-style timing, route checkpoints and conditions at each arrival hour             |
 | `conditions.js`                      | AQI categories and peaks, avalanche-season link rule                                     |
 | `share.js`                           | Plan ⇄ URL encoding with strict validation of incoming links                             |
 | `briefing.js`                        | `BRIEFING_URL` config, payload allowlist, 8 s timeout, per-plan cache, template fallback |
@@ -81,7 +83,7 @@ flowchart LR
 
 ## Privacy and security
 
-- **GPX never leaves the browser.** Files are parsed locally. Only the selected forecast point's coordinates and elevation go to Open-Meteo (forecast and air-quality APIs). Map tiles reveal the viewed area to OpenStreetMap. The app never asks for device location. Plan links contain the forecast point's coordinates, so share them as you would a map pin. They never include GPX data, and the values are validated when a link is opened.
+- **GPX files never leave the browser.** Files are parsed locally. Only coordinates and elevations go to Open-Meteo: the selected forecast point (forecast and air-quality APIs) and, for a route, up to six checkpoints. Map tiles reveal the viewed area to OpenStreetMap. The app never asks for device location. Plan links contain the forecast point's coordinates, so share them as you would a map pin. They never include GPX data, and the values are validated when a link is opened.
 - **The AI sees only derived numbers.** The briefing payload is a fixed allowlist: location name, activity, duration, window times, feels-like range, max rain %, wind and gusts, UV, sunset, elevation and up to three penalty rows. It contains no coordinates, GPX or free text.
 - **The API key is server-side only.** It is a Cloudflare secret (`wrangler secret put`), read as `env.ANTHROPIC_API_KEY`. It isn't in the frontend, the repo or git history.
 - **The Worker is locked down.**
@@ -127,6 +129,6 @@ UV categories follow the [EPA scale](https://www.epa.gov/sunsafety/uv-index-scal
 ## What I'd build next
 
 - **Deeper hazard feeds.** Embed the Utah Avalanche Center danger rating for the point's region in winter, add observed AirNow readings next to the modeled AQI, and offer an optional AQI limit that rules windows out the way thunderstorms do now.
-- **Segment-level route forecasts.** Split a GPX route by estimated pace, so each part of the outing is scored with the forecast for that place and that hour. A ridge at 1 PM can differ a lot from the trailhead at 8 AM.
+- **Score windows along the whole route.** The route panel already shows conditions at each checkpoint for the hour you'd reach it. Next, rank start times by the penalties across all checkpoints instead of at one point, and learn each user's real pace from their past GPX tracks.
 - **Saved plans synced across devices.** Store plans and checklists behind a passkey login, add a shareable read-only plan link, and send an alert if the chosen window's forecast changes overnight.
 - **Personal comfort calibration.** Let users rate finished outings, then fit their own thresholds. Someone who runs warm could shift the 42–75°F band, and the briefing would explain the change.
