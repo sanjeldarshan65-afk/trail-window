@@ -184,10 +184,11 @@ legend {
 .quick-locations {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px 12px;
+  gap: 4px 16px;
   margin-top: 10px;
 }
 .quick-locations button {
+  white-space: nowrap;
   border: 0;
   background: none;
   font-size: 12px;
@@ -832,9 +833,6 @@ footer {
   .sidebar h1 {
     font-size: 23px;
     margin-bottom: 18px;
-  }
-  .quick-locations {
-    gap: 14px;
   }
   #search-form {
     display: grid;

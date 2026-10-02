@@ -54,7 +54,11 @@
             </button>
           </div>
           <div id="locations" class="location-options" hidden></div>
-          <div class="quick-locations">
+          <div
+            class="quick-locations"
+            role="group"
+            aria-label="Preset locations"
+          >
             <button type="button" data-place="Salt Lake City">
               Salt Lake City</button
             ><button
@@ -63,16 +67,20 @@
               data-latitude="40.6"
               data-longitude="-111.58333"
               data-elevation="2679"
+              aria-label="Brighton, Wasatch Range"
+              title="Wasatch Range · Brighton forecast point"
             >
-              Wasatch (Brighton)</button
+              Brighton</button
             ><button
               type="button"
               data-place="Trial Lake forecast point"
               data-latitude="40.68333"
               data-longitude="-110.95"
               data-elevation="3039"
+              aria-label="Trial Lake, Uinta Mountains"
+              title="Uinta Mountains · Trial Lake forecast point"
             >
-              Uintas (Trial Lake)
+              Trial Lake
             </button>
           </div>
           <fieldset>
