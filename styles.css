@@ -516,9 +516,14 @@ main {
   line-height: 1.6;
   max-width: 560px;
 }
-.recommendation button {
+.recommendation-actions {
   margin-left: auto;
   flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.recommendation button {
   border: 1px solid #9ebcad;
   border-radius: 5px;
   color: var(--green);
@@ -886,7 +891,7 @@ footer {
     align-items: start;
     flex-wrap: wrap;
   }
-  .recommendation button {
+  .recommendation-actions {
     margin-left: 65px;
   }
   .packing-list {
@@ -1018,7 +1023,7 @@ footer {
   .recommendation h2 {
     font-size: 23px;
   }
-  .recommendation button {
+  .recommendation-actions {
     margin-left: 48px;
   }
   .hourly-panel {
@@ -1393,7 +1398,7 @@ input[type="range"] {
     grid-template-columns: 36px minmax(0, 1fr);
     align-items: start;
   }
-  .recommendation button {
+  .recommendation-actions {
     grid-column: 2;
     margin: 4px 0 0;
     justify-self: start;

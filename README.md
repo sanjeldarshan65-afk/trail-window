@@ -14,6 +14,7 @@ It's a static site with no build step and no account. It uses Leaflet, OpenStree
 - **GPX import and elevation.** Parses a GPX file in the browser and reports distance and ascent. You can forecast at the start, high point or finish, at that point's elevation. You can also click the map or enter coordinates and elevation by hand.
 - **Adaptive packing list.** Items appear because of the forecast: a warm layer for low feels-like, sun protection for UV, extra water for heat, a windproof layer for gusts, a shell for rain. Each forecast-driven item says why in parentheses.
 - **Trail briefing.** A 2–3 sentence summary of the chosen window that names its main tradeoff, such as a cold start, afternoon heat or gusts on exposed terrain, using only the forecast numbers. The live demo writes it from local templates. An AI version is built and tested behind a Cloudflare Worker (see [Deploy the AI briefing](#deploy-the-ai-briefing)); once deployed, the card switches to AI text and falls back to the template on any error, so it's never blank.
+- **Shareable plan links.** The address bar always holds the plan on screen (place, day, activity, duration and limits), and **Copy link** puts it on the clipboard. Opening a link restores the plan. If its day has dropped out of the forecast, the app says so.
 - Personal rain and gust limits, saved plans, a persistent checklist, plan download, an hourly chart with a numeric table, keyboard and screen-reader support, and layouts from 390px phones up.
 
 ## How scoring works
@@ -71,13 +72,14 @@ flowchart LR
 | `index.html`, `styles.css`, `app.js` | Interface, state, Open-Meteo calls, map, checklist and saved plan                        |
 | `planner.js`                         | `rankWindows`, `findWindow`, `tieNote`; runs in browser and Node                         |
 | `route.js`                           | GPX validation and parsing                                                               |
+| `share.js`                           | Plan ⇄ URL encoding with strict validation of incoming links                             |
 | `briefing.js`                        | `BRIEFING_URL` config, payload allowlist, 8 s timeout, per-plan cache, template fallback |
 | [`worker/`](worker/README.md)        | Cloudflare Worker that calls Anthropic (`claude-haiku-4-5` by default, `max_tokens` 250) |
 | `vendor/`                            | Vendored Leaflet, Chart.js and Lucide; no CDN scripts                                    |
 
 ## Privacy and security
 
-- **GPX never leaves the browser.** Files are parsed locally. Only the selected forecast point's coordinates and elevation go to Open-Meteo. Map tiles reveal the viewed area to OpenStreetMap. The app never asks for device location.
+- **GPX never leaves the browser.** Files are parsed locally. Only the selected forecast point's coordinates and elevation go to Open-Meteo. Map tiles reveal the viewed area to OpenStreetMap. The app never asks for device location. Plan links contain the forecast point's coordinates, so share them as you would a map pin. They never include GPX data, and the values are validated when a link is opened.
 - **The AI sees only derived numbers.** The briefing payload is a fixed allowlist: location name, activity, duration, window times, feels-like range, max rain %, wind and gusts, UV, sunset, elevation and up to three penalty rows. It contains no coordinates, GPX or free text.
 - **The API key is server-side only.** It is a Cloudflare secret (`wrangler secret put`), read as `env.ANTHROPIC_API_KEY`. It isn't in the frontend, the repo or git history.
 - **The Worker is locked down.**

@@ -176,10 +176,11 @@ async function stubNetwork(context, worker) {
   });
 }
 
-async function openPage(browser, width, worker) {
+async function openPage(browser, width, worker, path = "/") {
   const context = await browser.newContext({
     viewport: { width, height: 900 },
     deviceScaleFactor: width < 800 ? 2 : 1,
+    permissions: ["clipboard-read", "clipboard-write"],
   });
   await stubNetwork(context, worker);
   const page = await context.newPage();
@@ -188,7 +189,7 @@ async function openPage(browser, width, worker) {
     if (message.type() === "error") errors.push(message.text());
   });
   page.on("pageerror", (error) => errors.push(error.message));
-  await page.goto(origin + "/");
+  await page.goto(origin + path);
   await page.locator("#results").waitFor({ state: "visible" });
   return { context, page, errors };
 }
@@ -266,6 +267,9 @@ try {
     const { context, page, errors } = await openPage(browser, width);
     await briefingSettled(page);
     await noHorizontalScroll(page, "initial load");
+    if (/[?&]lat=40\.76080&lon=-111\.89100/.test(page.url()))
+      pass("address bar holds the current plan");
+    else fail(`address bar not synced: ${page.url()}`);
 
     const days = page.locator("#days .day");
     const count = await days.count();
@@ -350,6 +354,69 @@ try {
     else pass("no console errors");
     await context.close();
   }
+
+  console.log("\nShared plan link");
+  const tomorrow = addDays(today, 1);
+  const shared = await openPage(
+    browser,
+    390,
+    null,
+    `/?place=Brighton%20forecast%20point&lat=40.6&lon=-111.58333&elev=2679&region=Utah&country=United%20States&date=${tomorrow}&activity=biking&hours=3&rain=40&gust=25`,
+  );
+  await briefingSettled(shared.page);
+  const restored = await shared.page.evaluate(() => ({
+    heading: document.querySelector("#place-heading").textContent,
+    ride: document
+      .querySelector('[data-activity="biking"]')
+      .getAttribute("aria-pressed"),
+    hours: document.querySelector("#duration").value,
+    rain: document.querySelector("#rain-limit").value,
+    gust: document.querySelector("#gust-limit").value,
+    day: [...document.querySelectorAll("#days .day")].findIndex(
+      (d) => d.getAttribute("aria-pressed") === "true",
+    ),
+  }));
+  const expected = {
+    heading: "Brighton forecast point",
+    ride: "true",
+    hours: "3",
+    rain: "40",
+    gust: "25",
+    day: 1,
+  };
+  if (JSON.stringify(restored) === JSON.stringify(expected))
+    pass("link restores place, day, activity, duration and limits");
+  else fail(`link restored ${JSON.stringify(restored)}`);
+  await shared.page.locator("#days .day").nth(2).click();
+  await shared.page.click("#share-plan");
+  const copied = await shared.page.evaluate(() =>
+    navigator.clipboard.readText(),
+  );
+  if (
+    copied.includes(`date=${addDays(today, 2)}`) &&
+    copied.includes("activity=biking") &&
+    (await shared.page.locator("#share-plan").textContent()).includes(
+      "Link copied",
+    )
+  )
+    pass("Copy link copies the plan on screen");
+  else fail(`Copy link copied: ${copied}`);
+  await noHorizontalScroll(shared.page, "shared plan with two buttons");
+  if (shared.errors.length)
+    fail(`console errors: ${shared.errors.join(" | ")}`);
+  await shared.context.close();
+
+  const expired = await openPage(
+    browser,
+    1280,
+    null,
+    "/?place=Old%20plan&lat=40.6&lon=-111.58&date=2020-01-01",
+  );
+  const note = await expired.page.locator("#status").textContent();
+  if (/no longer in the forecast/.test(note))
+    pass("expired link explains it shows the current forecast");
+  else fail(`expired link status: "${note}"`);
+  await expired.context.close();
 
   console.log("\nBriefing with a configured Worker");
   let workerCalls = 0;

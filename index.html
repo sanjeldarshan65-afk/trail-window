@@ -269,10 +269,16 @@
               <h2 id="window-title"></h2>
               <p id="window-reason"></p>
             </div>
-            <button id="save-plan" type="button">
-              <i data-lucide="bookmark" aria-hidden="true"></i
-              ><span>Save plan</span>
-            </button>
+            <div class="recommendation-actions">
+              <button id="share-plan" type="button">
+                <i data-lucide="link" aria-hidden="true"></i
+                ><span>Copy link</span>
+              </button>
+              <button id="save-plan" type="button">
+                <i data-lucide="bookmark" aria-hidden="true"></i
+                ><span>Save plan</span>
+              </button>
+            </div>
           </section>
           <section class="briefing" aria-labelledby="briefing-heading">
             <div class="briefing-heading">
@@ -410,6 +416,7 @@
     <script src="vendor/leaflet.js"></script>
     <script src="planner.js"></script>
     <script src="briefing.js"></script>
+    <script src="share.js"></script>
     <script src="route.js"></script>
     <script src="app.js"></script>
   </body>

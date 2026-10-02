@@ -444,6 +444,7 @@ function renderDay() {
   );
   $("#save-plan").disabled = !bestWindow;
   $("#save-plan span").textContent = "Save plan";
+  $("#share-plan span").textContent = "Copy link";
   if (bestWindow) {
     const maxRain = Math.max(...bestWindow.hours.map((h) => h.rain));
     const maxWind = Math.max(...bestWindow.hours.map((h) => h.wind));
@@ -491,6 +492,7 @@ function renderDay() {
   renderChart(getHours(selectedDay));
   renderPacking();
   renderBriefing(renderEvidence());
+  syncUrl();
   icons();
 }
 function renderForecast() {
@@ -611,6 +613,9 @@ async function loadForecast(nextPlace, restoreDate) {
     if (!place.routePoint) clearRoute();
     selectedDay = Math.max(0, forecast.daily.time.indexOf(restoreDate));
     renderForecast();
+    if (restoreDate && !forecast.daily.time.includes(restoreDate))
+      $("#status").textContent =
+        `The plan's date (${new Date(restoreDate + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}) is no longer in the forecast, so this shows the current five days.`;
   } catch (error) {
     if (error.name !== "AbortError") $("#status").textContent = error.message;
   }
@@ -719,9 +724,7 @@ $("#save-plan").addEventListener("click", () => {
       "Your browser could not save the plan. Try enabling local storage.";
   }
 });
-$("#restore-plan").addEventListener("click", () => {
-  const saved = readSaved();
-  if (!saved) return;
+function applyPlan(saved) {
   setActivity(saved.activity);
   duration = saved.duration;
   $("#duration").value = duration;
@@ -736,6 +739,38 @@ $("#restore-plan").addEventListener("click", () => {
   }
   clearRoute();
   loadForecast({ ...saved.place, routePoint: false }, saved.date);
+}
+$("#restore-plan").addEventListener("click", () => {
+  const saved = readSaved();
+  if (saved) applyPlan(saved);
+});
+const currentPlan = () => ({
+  place,
+  date: forecast.daily.time[selectedDay],
+  duration,
+  activity,
+  limits,
+});
+const shareUrl = () =>
+  `${location.origin}${location.pathname}?${TrailShare.encode(currentPlan())}`;
+// Keep the address bar pointing at the plan on screen.
+function syncUrl() {
+  try {
+    history.replaceState(null, "", shareUrl());
+  } catch {
+    /* Sharing still works through the Copy link button. */
+  }
+}
+$("#share-plan").addEventListener("click", async () => {
+  if (!forecast) return;
+  const url = shareUrl();
+  try {
+    await navigator.clipboard.writeText(url);
+    $("#share-plan span").textContent = "Link copied";
+    $("#status").textContent = "Plan link copied to the clipboard.";
+  } catch {
+    $("#status").textContent = `Copy this plan link: ${url}`;
+  }
 });
 function clearRoute() {
   route = null;
@@ -896,10 +931,13 @@ setInterval(() => {
 }, 60000);
 icons();
 updateSaved();
-loadForecast({
-  name: "Salt Lake City",
-  admin1: "Utah",
-  country: "United States",
-  latitude: 40.7608,
-  longitude: -111.891,
-});
+const sharedPlan = TrailShare.decode(location.search);
+if (sharedPlan) applyPlan(sharedPlan);
+else
+  loadForecast({
+    name: "Salt Lake City",
+    admin1: "Utah",
+    country: "United States",
+    latitude: 40.7608,
+    longitude: -111.891,
+  });
