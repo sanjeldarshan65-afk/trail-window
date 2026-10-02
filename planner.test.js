@@ -113,3 +113,15 @@ assert.equal(
 console.log(
   "Warm noon windows rank below comfortable mornings; exact ties favor earlier starts.",
 );
+const { tieNote } = require("./planner");
+assert.equal(tieNote([]), "");
+assert.equal(tieNote([{ score: 1 }, { score: 2 }]), "");
+assert.equal(
+  tieNote([{ score: 1 }, { score: 1 }, { score: 3 }]),
+  "Two windows tie on comfort penalties; the earliest complete window wins.",
+);
+assert.match(
+  tieNote(rankWindows(hours, 2, "hiking", rise, set, `${day}T00:00`)),
+  /^\d+ windows tie on comfort penalties/,
+);
+console.log("Tie notes use the real count and hide when nothing ties.");

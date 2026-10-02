@@ -95,6 +95,14 @@
     );
   }
   const findWindow = (...args) => rankWindows(...args)[0] || null;
-  root.TrailPlanner = { findWindow, rankWindows };
+  const tieNote = (windows) => {
+    if (!windows.length) return "";
+    const count = windows.filter(
+      (candidate) => Math.abs(candidate.score - windows[0].score) < 1e-9,
+    ).length;
+    if (count < 2) return "";
+    return `${count === 2 ? "Two" : count} windows tie on comfort penalties; the earliest complete window wins.`;
+  };
+  root.TrailPlanner = { findWindow, rankWindows, tieNote };
   if (typeof module !== "undefined") module.exports = root.TrailPlanner;
 })(typeof window !== "undefined" ? window : globalThis);

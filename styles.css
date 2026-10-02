@@ -1207,6 +1207,9 @@ footer {
 .alternatives th {
   font-weight: 600;
 }
+.alternatives .tie-note {
+  margin-top: 10px;
+}
 .leaflet-container {
   font-family: "DM Sans", sans-serif;
   font-size: 12px;

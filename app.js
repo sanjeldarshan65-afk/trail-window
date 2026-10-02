@@ -190,14 +190,11 @@ function renderEvidence() {
     });
     table.append(body);
     $("#alternatives").append(table);
-    if (
-      windows.filter(
-        (candidate) => Math.abs(candidate.score - bestWindow.score) < 1e-9,
-      ).length > 1
-    ) {
+    const tie = TrailPlanner.tieNote(windows);
+    if (tie) {
       const note = document.createElement("p");
-      note.textContent =
-        "Several windows tie on comfort penalties; the earliest complete window wins.";
+      note.className = "micro-note tie-note";
+      note.textContent = tie;
       $("#alternatives").append(note);
     }
   }
