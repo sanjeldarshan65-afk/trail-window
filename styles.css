@@ -4,6 +4,9 @@
 .source-link{min-height:var(--control-target);min-width:var(--control-target);justify-content:center}
 input[type=range]{min-height:var(--control-target)}
 .search-input:focus-within{outline:3px solid #1588a4;outline-offset:3px}
+.chart-legend,.sun-times>span,.photo-credit,.destination-meta,.date,.rain{font-size:11px}
+.photo-credit{padding:8px 10px;top:12px;bottom:auto;border-radius:3px}
+.day{padding:14px 12px}
 @media(max-width:760px){
   #search-form{display:block}
   fieldset{margin:22px 0}
@@ -22,4 +25,8 @@ input[type=range]{min-height:var(--control-target)}
   .saved-plan p{display:none}
   .saved-plan h2{margin-bottom:0}
   .saved-plan button{min-height:44px}
+  .day{padding:12px 8px}
+  .date,.rain,.chart-legend,.photo-credit{font-size:11px}
+  .panel-heading{flex-wrap:wrap}
+  .chart-legend{flex-direction:row;gap:12px}
 }
