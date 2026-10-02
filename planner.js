@@ -9,7 +9,7 @@
         (activity === "biking" ? Math.max(0, hour.wind - 12) * 1.2 : 0),
       temperature:
         Math.max(0, 42 - hour.feels) * 1.2 +
-        Math.max(0, hour.feels - 82) * 1.5 +
+        Math.max(0, hour.feels - 75) * 1.5 +
         (activity === "running" ? Math.max(0, hour.feels - 75) * 1.3 : 0),
     };
   };

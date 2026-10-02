@@ -33,14 +33,39 @@ const clockTime = (time) => {
   const minute = time.slice(14, 16);
   return `${hour % 12 || 12}${minute === "00" ? "" : ":" + minute} ${hour >= 12 ? "PM" : "AM"}`;
 };
-const weather = (code) => {
+const weather = (code, rain = 100) => {
   if (!Number.isFinite(code)) return ["Unavailable", "circle-help"];
   if (code === 0) return ["Clear sky", "sun"];
   if (code <= 3) return ["Partly cloudy", "cloud-sun"];
   if (code === 45 || code === 48) return ["Fog", "cloud-fog"];
   if (code >= 95) return ["Thunderstorms", "cloud-lightning"];
   if ([71, 73, 75, 77, 85, 86].includes(code)) return ["Snow", "cloud-snow"];
-  return ["Rain showers", "cloud-rain"];
+  return rain > 20
+    ? ["Rain showers", "cloud-rain"]
+    : ["Low rain chance", "cloud"];
+};
+const durationText = (minutes) => {
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  return (
+    [hours ? `${hours} hr` : "", remainder ? `${remainder} min` : ""]
+      .filter(Boolean)
+      .join(" ") || "0 min"
+  );
+};
+const uvText = (value) => {
+  const rounded = Math.round(value);
+  const category =
+    rounded < 3
+      ? "Low"
+      : rounded < 6
+        ? "Moderate"
+        : rounded < 8
+          ? "High"
+          : rounded < 11
+            ? "Very high"
+            : "Extreme";
+  return `${rounded} · ${category}`;
 };
 const readSaved = () => {
   try {
@@ -114,14 +139,14 @@ function renderEvidence() {
         `${Math.max(...bestWindow.hours.map((h) => h.rain))}% max`,
       ],
       [
-        "Wind gusts",
+        "Gusts (window)",
         `${Math.round(Math.max(...bestWindow.hours.map((h) => h.gust)))} mph max`,
       ],
       [
         "Feels like",
         `${Math.round(Math.min(...feels))}°–${Math.round(Math.max(...feels))}°F`,
       ],
-      ["Before sunset", `${bestWindow.daylightBuffer} min`],
+      ["Before sunset", durationText(bestWindow.daylightBuffer)],
     ];
     metrics.forEach(([label, value]) => {
       const item = document.createElement("div");
@@ -165,6 +190,16 @@ function renderEvidence() {
     });
     table.append(body);
     $("#alternatives").append(table);
+    if (
+      windows.filter(
+        (candidate) => Math.abs(candidate.score - bestWindow.score) < 1e-9,
+      ).length > 1
+    ) {
+      const note = document.createElement("p");
+      note.textContent =
+        "Several windows tie on comfort penalties; the earliest complete window wins.";
+      $("#alternatives").append(note);
+    }
   }
   const fetched = new Intl.DateTimeFormat("en-US", {
     hour: "numeric",
@@ -181,17 +216,42 @@ function packingProgress() {
 }
 function renderPacking() {
   const d = forecast.daily;
-  const items = ["Water bottle", "Charged phone", "Offline map"];
+  const items = [
+    ["Water bottle", "Hydration"],
+    ["Charged phone", "Communication"],
+    ["Offline map", "Navigation without service"],
+  ];
   if (d.precipitation_probability_max[selectedDay] >= 25)
-    items.push("Rain shell");
-  if (d.temperature_2m_min[selectedDay] < 55) items.push("Warm layer");
-  if (d.uv_index_max[selectedDay] >= 3) items.push("Sun protection");
-  if (d.temperature_2m_max[selectedDay] >= 80) items.push("Extra water");
-  if (d.wind_gusts_10m_max[selectedDay] >= 20) items.push("Windproof layer");
-  if (activity === "biking") items.push("Helmet & repair kit");
-  if (activity === "hiking") items.push("Trail snacks");
+    items.push([
+      "Rain shell",
+      `${Math.round(d.precipitation_probability_max[selectedDay])}% rain chance all day`,
+    ]);
+  const minFeels = bestWindow
+    ? Math.min(...bestWindow.hours.map((h) => h.feels))
+    : Math.min(...getHours(selectedDay).map((h) => h.feels));
+  if (minFeels < 55)
+    items.push([
+      "Warm layer",
+      `${Math.round(minFeels)}° feels like ${bestWindow ? "in window" : "during day"}`,
+    ]);
+  if (d.uv_index_max[selectedDay] >= 3)
+    items.push(["Sun protection", `UV ${uvText(d.uv_index_max[selectedDay])}`]);
+  if (d.temperature_2m_max[selectedDay] >= 80)
+    items.push([
+      "Extra water",
+      `${Math.round(d.temperature_2m_max[selectedDay])}° daily high`,
+    ]);
+  if (d.wind_gusts_10m_max[selectedDay] >= 20)
+    items.push([
+      "Windproof layer",
+      `${Math.round(d.wind_gusts_10m_max[selectedDay])} mph daily gusts`,
+    ]);
+  if (activity === "biking")
+    items.push(["Helmet & repair kit", "For your ride"]);
+  if (activity === "hiking")
+    items.push(["Trail snacks", `${duration} hours outside`]);
   $("#packing").replaceChildren(
-    ...items.map((item) => {
+    ...items.map(([item, reason]) => {
       const label = document.createElement("label");
       label.className = "pack-item";
       const input = document.createElement("input");
@@ -210,7 +270,7 @@ function renderPacking() {
         }
       });
       const span = document.createElement("span");
-      span.textContent = item;
+      span.textContent = `${item} (${reason})`;
       label.append(input, span);
       return label;
     }),
@@ -338,7 +398,7 @@ function renderDay() {
     $("#window-title").textContent =
       `${clockTime(bestWindow.start)} – ${clockTime(bestWindow.end)}`;
     $("#window-reason").textContent =
-      `${duration} ${duration === 1 ? "hour" : "hours"} for your ${activity === "hiking" ? "hike" : activity === "biking" ? "ride" : "run"}, with rain chance up to ${maxRain}% and winds up to ${Math.round(maxWind)} mph. Times use ${forecast.timezone.replaceAll("_", " ")}.`;
+      `${duration} ${duration === 1 ? "hour" : "hours"} for your ${activity === "hiking" ? "hike" : activity === "biking" ? "ride" : "run"}. ${maxRain === 0 ? "No rain expected." : `Rain chance up to ${maxRain}% in this window.`} Sustained wind (window): up to ${Math.round(maxWind)} mph. Times use ${forecast.timezone.replaceAll("_", " ")}.`;
   } else {
     $("#window-rating").textContent = "Try another day or a shorter outing";
     $("#window-title").textContent = "No suitable window";
@@ -358,10 +418,10 @@ function renderDay() {
     ],
     [
       "wind",
-      "Wind gusts",
+      "Gusts (all day)",
       `${Math.round(d.wind_gusts_10m_max[selectedDay])} mph`,
     ],
-    ["sun", "UV index", `${d.uv_index_max[selectedDay]}`],
+    ["sun", "UV index", uvText(d.uv_index_max[selectedDay])],
   ]
     .map(
       ([icon, label, value]) =>
@@ -369,6 +429,8 @@ function renderDay() {
     )
     .join("");
   $("#sunrise").textContent = clockTime(d.sunrise[selectedDay]);
+  $("#glance-heading").textContent =
+    `${new Date(d.time[selectedDay] + "T12:00:00").toLocaleDateString("en-US", { weekday: "long" })} at a glance`;
   $("#sunset").textContent = clockTime(d.sunset[selectedDay]);
   renderChart(getHours(selectedDay));
   renderPacking();
@@ -411,7 +473,10 @@ function renderForecast() {
       button.type = "button";
       button.className = "day";
       const local = new Date(date + "T12:00:00");
-      const [label, icon] = weather(forecast.daily.weather_code[i]);
+      const [label, icon] = weather(
+        forecast.daily.weather_code[i],
+        forecast.daily.precipitation_probability_max[i],
+      );
       button.innerHTML = `<span class="day-top"><span class="weekday">${local.toLocaleDateString("en-US", { weekday: "short" })}<span class="date">${local.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span></span><i data-lucide="${icon}" aria-hidden="true"></i></span><span class="temp">${Math.round(forecast.daily.temperature_2m_max[i])}° <small>/ ${Math.round(forecast.daily.temperature_2m_min[i])}°</small></span><span class="condition">${label}</span><span class="rain"><i data-lucide="droplets" aria-hidden="true"></i>${forecast.daily.precipitation_probability_max[i]}% rain</span>`;
       button.setAttribute(
         "aria-label",
@@ -541,7 +606,16 @@ $("#search-form").addEventListener("submit", (event) => {
 document.querySelectorAll("[data-place]").forEach((button) =>
   button.addEventListener("click", () => {
     $("#location").value = button.dataset.place;
-    search(button.dataset.place);
+    if (button.dataset.latitude) {
+      loadForecast({
+        name: button.dataset.place,
+        latitude: Number(button.dataset.latitude),
+        longitude: Number(button.dataset.longitude),
+        elevation: Number(button.dataset.elevation),
+        admin1: "Utah",
+        country: "United States",
+      });
+    } else search(button.dataset.place);
   }),
 );
 function setActivity(value) {

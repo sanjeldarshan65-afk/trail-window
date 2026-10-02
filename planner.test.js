@@ -91,3 +91,25 @@ assert.equal(findWindow(hours, 0, "hiking", rise, set, `${day}T00:00`), null);
 console.log(
   "Weather limits, missing hours, daylight buffer and score explanations passed.",
 );
+const hotDay = hours.map((hour, index) => ({
+  ...hour,
+  feels: index >= 12 ? 80 : 65,
+}));
+const hotRanked = rankWindows(hotDay, 2, "hiking", rise, set, `${day}T00:00`);
+assert.equal(hotRanked[0].start, `${day}T08:00`);
+assert.equal(
+  hotRanked.find((window) => window.start === `${day}T12:00`).components
+    .temperature,
+  7.5,
+);
+assert.ok(
+  hotRanked.find((window) => window.start === `${day}T12:00`).score >
+    hotRanked[0].score,
+);
+assert.equal(
+  rankWindows(hours, 2, "hiking", rise, set, `${day}T00:00`)[0].start,
+  `${day}T08:00`,
+);
+console.log(
+  "Warm noon windows rank below comfortable mornings; exact ties favor earlier starts.",
+);
