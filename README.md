@@ -6,14 +6,14 @@
 
 ![Five-day outlook, best forecast window and trail briefing](docs/screenshot.png)
 
-It's a static site with no build step and no account. It uses Leaflet, OpenStreetMap and Open-Meteo, plus an optional Cloudflare Worker for the AI briefing.
+It's a static site with no build step and no account. It uses Leaflet, OpenStreetMap and Open-Meteo, plus an optional Cloudflare Worker for AI briefings.
 
 ## Features
 
 - **Window scoring.** Ranks every complete daylight window of 1–5 hours by rain, wind and feels-like penalties, and shows the math: a per-component penalty table, alternative windows, and honest tie notes.
 - **GPX import and elevation.** Parses a GPX file in the browser and reports distance and ascent. You can forecast at the start, high point or finish, at that point's elevation. You can also click the map or enter coordinates and elevation by hand.
 - **Adaptive packing list.** Items appear because of the forecast: a warm layer for low feels-like, sun protection for UV, extra water for heat, a windproof layer for gusts, a shell for rain. Each forecast-driven item says why in parentheses.
-- **AI trail briefing.** A 2–3 sentence summary of the chosen window that names its main tradeoff, such as a cold start, afternoon heat or gusts on exposed terrain. It uses only the forecast numbers. If the AI is unavailable, a local template writes the briefing, so the card is never blank.
+- **Trail briefing.** A 2–3 sentence summary of the chosen window that names its main tradeoff, such as a cold start, afternoon heat or gusts on exposed terrain, using only the forecast numbers. The live demo writes it from local templates. An AI version is built and tested behind a Cloudflare Worker (see [Deploy the AI briefing](#deploy-the-ai-briefing)); once deployed, the card switches to AI text and falls back to the template on any error, so it's never blank.
 - Personal rain and gust limits, saved plans, a persistent checklist, plan download, an hourly chart with a numeric table, keyboard and screen-reader support, and layouts from 390px phones up.
 
 ## How scoring works
@@ -47,7 +47,7 @@ Times use the destination's timezone, not the browser's.
 
 **Ties:** scores within 1e-9 of each other count as equal, and the earlier start wins. The interface says so, for example "Two windows tie on comfort penalties; the earliest complete window wins."
 
-**Why these are comfort preferences, not safety probabilities:** the thresholds (42–75°F, 10 mph wind, 20 mph gusts) and weights describe how pleasant a few hours outside usually feel. They aren't calibrated against injury or incident data, and a low score doesn't mean a window is safe. Terrain, lightning outside the forecast grid, avalanche hazard, closures and route exposure are not modeled. The AI briefing explains this deterministic score; it doesn't change the score or the ranking.
+**Why these are comfort preferences, not safety probabilities:** the thresholds (42–75°F, 10 mph wind, 20 mph gusts) and weights describe how pleasant a few hours outside usually feel. They aren't calibrated against injury or incident data, and a low score doesn't mean a window is safe. Terrain, lightning outside the forecast grid, avalanche hazard, closures and route exposure are not modeled. The briefing explains this deterministic score; it doesn't change the score or the ranking.
 
 ## Architecture
 
@@ -100,7 +100,7 @@ cd worker && npm install && npm test  # Worker validation, CORS, rate limit and 
 
 `check:responsive` stubs Open-Meteo and the map tiles with a fixture, so it runs offline and gives the same result every time. It fails on horizontal page scroll, console errors, tap targets under 44px at 390px, or a broken briefing fallback.
 
-Without a Worker, the briefing card shows the template version with a small "template" badge.
+Without a Worker, the briefing card shows the template version and makes no AI claim. With one, it's labelled as an AI briefing, and a failed request shows the template with a small "template" badge.
 
 ## Deploy the AI briefing
 

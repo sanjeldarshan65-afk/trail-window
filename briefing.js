@@ -148,6 +148,7 @@
 
   root.TrailBriefing = {
     BRIEFING_URL,
+    aiEnabled: !!BRIEFING_URL,
     TIMEOUT_MS,
     buildPayload,
     templateBriefing,

@@ -213,14 +213,22 @@ function showBriefing({ text, source }) {
   $("#briefing-loading").hidden = true;
   $("#briefing-text").textContent = text;
   $("#briefing-text").hidden = false;
-  $("#briefing-source").hidden = source !== "template";
+  $("#briefing-source").hidden =
+    source !== "template" || !TrailBriefing.aiEnabled;
+}
+// The card only claims AI when a Worker is configured. A failed AI request
+// still shows the template, marked with a badge.
+if (TrailBriefing.aiEnabled) {
+  $("#briefing-icon").dataset.lucide = "sparkles";
+  $("#briefing-label-text").textContent =
+    "AI briefing · based on forecast data";
 }
 function renderBriefing(compared) {
   if (!bestWindow) {
     briefingKey = null;
     showBriefing({
       text: "No complete daylight window fits your limits on this day, so there is no window to brief. Try another day, a shorter outing, or different limits.",
-      source: "template",
+      source: "none",
     });
     return;
   }

@@ -302,9 +302,11 @@ try {
       await briefingSettled(page);
       await noHorizontalScroll(page, `preset ${preset}`);
     }
+    const label = await page.locator("#briefing-label-text").textContent();
     const badge = await page.locator("#briefing-source").isVisible();
-    if (badge) pass("briefing shows template badge with no Worker configured");
-    else fail("template badge hidden with no Worker configured");
+    if (!badge && !/AI/.test(label))
+      pass(`no AI claim with no Worker configured: "${label.trim()}"`);
+    else fail(`card claims AI with no Worker configured: "${label.trim()}"`);
 
     if (width === 390) {
       const small = await smallTapTargets(page);
@@ -376,6 +378,13 @@ try {
   if (!(await ai.page.locator("#briefing-source").isVisible()))
     pass("no template badge on AI briefing");
   else fail("template badge visible on AI briefing");
+  if (
+    /^AI briefing/.test(
+      await ai.page.locator("#briefing-label-text").textContent(),
+    )
+  )
+    pass("card is labelled as an AI briefing");
+  else fail("AI briefing not labelled as AI");
   if (workerCalls === callsAfterTwoDays)
     pass(`cached: ${workerCalls} Worker calls after revisiting days`);
   else fail(`revisiting days called the Worker again (${workerCalls})`);
