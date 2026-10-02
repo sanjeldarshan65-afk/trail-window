@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7f4">
+  <title>Trail Window | Plan an outdoor day</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">▲</span><span>Trail Window</span></div>
+    <span class="top-note">A clearer forecast for time outside</span>
+  </header>
+  <main>
+    <section class="intro">
+      <p class="eyebrow">OUTING PLANNER</p>
+      <h1>Find your window outside.</h1>
+      <p>Check the forecast, compare the next few days, and pack for what the weather may bring.</p>
+    </section>
+    <section class="planner" aria-label="Plan an outing">
+      <form id="search-form">
+        <label for="location">Location</label>
+        <div class="search-row"><input id="location" name="location" placeholder="City or town" value="Salt Lake City, Utah" required autocomplete="address-level2"><button type="submit">Check weather <span aria-hidden="true">→</span></button></div>
+        <div class="activity-row"><span>Activity</span><div class="segments" role="group" aria-label="Activity"><button type="button" class="selected" data-activity="hiking" aria-pressed="true">Hiking</button><button type="button" data-activity="biking" aria-pressed="false">Biking</button><button type="button" data-activity="running" aria-pressed="false">Running</button></div></div>
+      </form>
+      <p id="status" role="status" aria-live="polite">Loading forecast…</p>
+    </section>
+    <section id="results" class="results" hidden>
+      <div class="section-heading"><div><p class="eyebrow">THE FORECAST</p><h2 id="place-heading"></h2></div><span id="updated"></span></div>
+      <div id="days" class="days" aria-label="Daily forecast"></div>
+      <div class="details">
+        <div class="window-panel"><p class="eyebrow">BEST DAYTIME WINDOW</p><h3 id="window-title"></h3><p id="window-reason"></p><div id="metrics" class="metrics"></div></div>
+        <div class="pack-panel"><p class="eyebrow">BEFORE YOU GO</p><h3>Pack for the conditions</h3><ul id="packing"></ul><p class="caution">Forecasts are estimates for the selected location, not trail conditions. Check local alerts and conditions before leaving.</p></div>
+      </div>
+      <p class="method"><strong>How the window is picked:</strong> Hours from 8 AM to 6 PM are ranked by rain chance, wind, and apparent temperature. This is a planning aid, not a safety assessment.</p>
+    </section>
+  </main>
+  <footer>Weather and location data: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>. No account or tracking.</footer>
+  <script src="app.js"></script>
+</body>
+</html>
