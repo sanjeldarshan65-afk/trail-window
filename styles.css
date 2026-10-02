@@ -89,6 +89,7 @@ svg {
   font-family: Barlow, sans-serif;
   font-size: 24px;
   font-weight: 700;
+  min-height: 44px;
 }
 .brand svg {
   width: 29px;
@@ -166,11 +167,13 @@ legend {
   border: 0;
   background: transparent;
   padding: 13px 0;
+  min-height: 44px;
   font-size: 13px;
 }
 .icon-button {
-  width: 42px;
+  width: 44px;
   height: 44px;
+  flex-shrink: 0;
   border: 0;
   background: transparent;
   border-radius: 5px;
@@ -764,7 +767,8 @@ main {
   margin-top: 5px;
 }
 .hourly-details summary {
-  min-height: 32px;
+  min-height: 44px;
+  padding: 12px 0;
 }
 .table-wrap {
   overflow: auto;
@@ -1447,5 +1451,28 @@ input[type="range"] {
   .chart-legend {
     flex-direction: row;
     gap: 12px;
+  }
+}
+
+/* Phones: day cards scroll sideways with snap points, and map controls
+   meet the 44px touch target. */
+@media (max-width: 760px) {
+  .days {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 20px;
+    margin: 0 -20px;
+    padding: 3px 20px 10px;
+  }
+  .day {
+    flex: 0 0 104px;
+    scroll-snap-align: start;
+  }
+  .leaflet-bar a {
+    width: 44px !important;
+    height: 44px !important;
+    line-height: 44px !important;
   }
 }
