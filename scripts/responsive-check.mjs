@@ -327,6 +327,23 @@ try {
       path: join(outDir, `trail-window-${width}.png`),
       fullPage: true,
     });
+    if (width === 1280)
+      await page.screenshot({
+        path: join(outDir, "trail-window-1280-plan.png"),
+        fullPage: true,
+        clip: await page.evaluate(() => {
+          const top = document.querySelector(".forecast-heading");
+          const bottom = document.querySelector(".briefing");
+          const a = top.getBoundingClientRect();
+          const b = bottom.getBoundingClientRect();
+          return {
+            x: a.left - 24,
+            y: a.top + scrollY - 24,
+            width: a.width + 48,
+            height: b.bottom - a.top + 48,
+          };
+        }),
+      });
     if (errors.length) fail(`console errors: ${errors.join(" | ")}`);
     else pass("no console errors");
     await context.close();
