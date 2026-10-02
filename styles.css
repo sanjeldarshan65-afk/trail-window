@@ -1481,3 +1481,53 @@ input[type="range"] {
     line-height: 44px !important;
   }
 }
+
+/* First impression: keep the best window above the fold on laptops and get
+   to the forecast sooner on phones. */
+.status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+}
+#trail-map {
+  height: 176px;
+}
+.recommendation {
+  margin-top: 16px;
+}
+.forecast-heading {
+  margin: 22px 0 14px;
+}
+#day-note {
+  margin-top: 8px;
+}
+@media (max-width: 760px) {
+  .sidebar {
+    padding: 18px 16px;
+  }
+  .sidebar h1 {
+    font-size: 21px;
+    margin-bottom: 12px;
+  }
+  fieldset {
+    margin: 14px 0 0;
+  }
+  .activities {
+    margin: 10px 0 8px;
+  }
+  .activities button {
+    min-height: 48px;
+  }
+  main {
+    padding: 16px 16px 0;
+  }
+  .days {
+    margin: 0 -16px;
+    padding: 3px 16px 10px;
+    scroll-padding-inline: 16px;
+  }
+  #trail-map {
+    height: 160px;
+  }
+}

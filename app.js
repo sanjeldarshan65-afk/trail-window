@@ -26,6 +26,22 @@ const checked = new Set(
   })(),
 );
 const icons = () => window.lucide?.createIcons();
+// fetch() rejects with a TypeError ("Failed to fetch", "Load failed") when the
+// network is down or blocked; say that in plain words instead.
+const friendlyError = (error) =>
+  error instanceof TypeError
+    ? "Can't reach the weather service. Check your connection and try again."
+    : error.message;
+let retryAction = null;
+function showError(error, retry) {
+  $("#status").textContent = friendlyError(error);
+  retryAction = retry;
+  $("#retry").hidden = !retry;
+}
+function clearError() {
+  retryAction = null;
+  $("#retry").hidden = true;
+}
 const formatted = (value, suffix = "") =>
   Number.isFinite(value) ? Math.round(value) + suffix : "Unavailable";
 const clockTime = (time) => {
@@ -197,6 +213,12 @@ function renderEvidence() {
       note.textContent = tie;
       $("#alternatives").append(note);
     }
+  }
+  if (!bestWindow) {
+    const note = document.createElement("p");
+    note.className = "micro-note";
+    note.textContent = "No window to compare on this day.";
+    $("#alternatives").append(note);
   }
   const fetched = new Intl.DateTimeFormat("en-US", {
     hour: "numeric",
@@ -448,6 +470,7 @@ function renderDay() {
   if (bestWindow) {
     const maxRain = Math.max(...bestWindow.hours.map((h) => h.rain));
     const maxWind = Math.max(...bestWindow.hours.map((h) => h.wind));
+    const maxGust = Math.max(...bestWindow.hours.map((h) => h.gust ?? h.wind));
     $("#window-rating").textContent =
       bestWindow.score > 35
         ? "Mixed conditions · plan carefully"
@@ -455,7 +478,7 @@ function renderDay() {
     $("#window-title").textContent =
       `${clockTime(bestWindow.start)} – ${clockTime(bestWindow.end)}`;
     $("#window-reason").textContent =
-      `${duration} ${duration === 1 ? "hour" : "hours"} for your ${activity === "hiking" ? "hike" : activity === "biking" ? "ride" : "run"}. ${maxRain === 0 ? "No rain expected." : `Rain chance up to ${maxRain}% in this window.`} Sustained wind (window): up to ${Math.round(maxWind)} mph. Times use ${forecast.timezone.replaceAll("_", " ")}.`;
+      `A ${duration}-hour ${activity === "hiking" ? "hike" : activity === "biking" ? "ride" : "run"} with ${maxRain === 0 ? "no rain expected" : `up to a ${maxRain}% rain chance`} and wind up to ${Math.round(maxWind)} mph (gusts ${Math.round(maxGust)}). Times are ${forecast.timezone.replaceAll("_", " ")} time.`;
   } else {
     $("#window-rating").textContent = "Try another day or a shorter outing";
     $("#window-title").textContent = "No suitable window";
@@ -542,20 +565,33 @@ function renderForecast() {
       );
       button.addEventListener("click", () => {
         selectedDay = i;
+        $("#day-note").hidden = true;
         renderDay();
       });
       return button;
     }),
   );
-  if (!getWindow(selectedDay) && selectedDay === 0) selectedDay = 1;
+  let jumped = false;
+  if (selectedDay === 0 && !getWindow(0)) {
+    const next = forecast.daily.time.findIndex((_, i) => i > 0 && getWindow(i));
+    if (next > 0) {
+      selectedDay = next;
+      jumped = true;
+    }
+  }
   $("#results").hidden = false;
   $("#status").textContent = "";
+  $("#day-note").textContent = jumped
+    ? `Today has no remaining window that fits your plan, so this shows ${new Date(forecast.daily.time[selectedDay] + "T12:00:00").toLocaleDateString("en-US", { weekday: "long" })}.`
+    : "";
+  $("#day-note").hidden = !jumped;
   renderDay();
 }
 async function loadForecast(nextPlace, restoreDate) {
   controller?.abort();
   controller = new AbortController();
   $("#status").textContent = "Getting the latest forecast…";
+  clearError();
   $("#results").hidden = true;
   $("#locations").hidden = true;
   try {
@@ -617,13 +653,15 @@ async function loadForecast(nextPlace, restoreDate) {
       $("#status").textContent =
         `The plan's date (${new Date(restoreDate + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}) is no longer in the forecast, so this shows the current five days.`;
   } catch (error) {
-    if (error.name !== "AbortError") $("#status").textContent = error.message;
+    if (error.name !== "AbortError")
+      showError(error, () => loadForecast(nextPlace, restoreDate));
   }
 }
 async function search(query) {
   controller?.abort();
   controller = new AbortController();
   $("#status").textContent = "Finding your destination…";
+  clearError();
   $("#locations").hidden = true;
   try {
     const url = new URL("https://geocoding-api.open-meteo.com/v1/search");
@@ -637,7 +675,10 @@ async function search(query) {
       throw new Error("Location search unavailable. Please try again.");
     const matches = (await response.json()).results;
     if (!matches?.length)
-      throw new Error("No city found. Try a nearby town or add a state.");
+      throw Object.assign(
+        new Error("No city found. Try a nearby town or add a state."),
+        { retryable: false },
+      );
     if (matches.length === 1) return loadForecast(matches[0]);
     $("#locations").replaceChildren(
       ...matches.map((match) => {
@@ -657,7 +698,8 @@ async function search(query) {
     $("#status").textContent =
       "Choose the matching destination in the location list.";
   } catch (error) {
-    if (error.name !== "AbortError") $("#status").textContent = error.message;
+    if (error.name !== "AbortError")
+      showError(error, error.retryable === false ? null : () => search(query));
   }
 }
 $("#search-form").addEventListener("submit", (event) => {
@@ -848,7 +890,7 @@ $("#gpx-file").addEventListener("change", async (event) => {
       throw new Error("Choose a GPX file smaller than 5 MB.");
     await importRoute(await file.text());
   } catch (error) {
-    $("#status").textContent = error.message;
+    showError(error, null);
   }
   event.target.value = "";
 });
@@ -859,7 +901,7 @@ $("#demo-route").addEventListener("click", async () => {
       throw new Error("Sample route unavailable. Try importing a GPX.");
     await importRoute(await response.text());
   } catch (error) {
-    $("#status").textContent = error.message;
+    showError(error, () => $("#demo-route").click());
   }
 });
 $("#point-form").addEventListener("submit", (event) => {
@@ -923,6 +965,7 @@ $("#download-plan").addEventListener("click", () => {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
 $(".trail-controls").open = matchMedia("(min-width: 761px)").matches;
+$("#retry").addEventListener("click", () => retryAction?.());
 $("#refresh-forecast").addEventListener("click", () => {
   if (place) loadForecast(place, forecast.daily.time[selectedDay]);
 });

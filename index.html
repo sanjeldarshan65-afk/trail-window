@@ -5,6 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f4f6f7" />
     <title>Trail Window · Your next day outside</title>
+    <meta
+      name="description"
+      content="Find the most comfortable hours in the next five days to hike, ride or run, with transparent scoring, GPX elevation and a forecast-driven packing list."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2316664d' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m8 3 4 8 5-5 5 15H2L8 3z'/%3E%3C/svg%3E"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Trail Window" />
+    <meta
+      property="og:description"
+      content="Find the most comfortable hours in the next five days to hike, ride or run."
+    />
+    <meta
+      property="og:url"
+      content="https://sanjeldarshan65-afk.github.io/trail-window/"
+    />
+    <meta
+      property="og:image"
+      content="https://sanjeldarshan65-afk.github.io/trail-window/docs/screenshot.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -242,7 +265,12 @@
             Select a point on the map or enter coordinates for a trail forecast.
           </p>
         </section>
-        <div id="status" role="status" aria-live="polite"></div>
+        <div class="status-row">
+          <div id="status" role="status" aria-live="polite"></div>
+          <button id="retry" class="text-command" type="button" hidden>
+            <i data-lucide="refresh-cw" aria-hidden="true"></i>Try again
+          </button>
+        </div>
         <div id="results" hidden>
           <div class="forecast-heading">
             <h2>Your five-day outlook</h2>
@@ -260,6 +288,7 @@
             </div>
           </div>
           <div id="days" class="days" aria-label="Select forecast day"></div>
+          <p id="day-note" class="micro-note" role="status" hidden></p>
           <section class="recommendation">
             <div class="recommendation-icon">
               <i data-lucide="sun" aria-hidden="true"></i>
